@@ -18,74 +18,127 @@ https://github.com/Amice13
 
 import re
 
+vowel = re.compile('аеиоуюяіїє')  # http://uk.wikipedia.org/wiki/Голосний_звук
+perfectiveground = re.compile('(ив|ивши|ившись|ыв|ывши|ывшись((?<=[ая])(в|вши|вшись)))$')
+ # http://uk.wikipedia.org/wiki/Рефлексивне_дієслово
+reflexive = re.compile('(с[яьи])$')
+# http://uk.wikipedia.org/wiki/Прикметник + http://wapedia.mobi/uk/Прикметник
+adjective = re.compile('(ими|ій|ий|а|е|ова|ове|ів|є|їй|єє|еє|я|ім|ем|им|ім|их|іх|ою|йми|іми|у|ю|ого|ому|ої)$')
+# http://uk.wikipedia.org/wiki/Дієприкметник
+participle = re.compile('(ий|ого|ому|им|ім|а|ій|у|ою|ій|і|их|йми|их)$')
+# http://uk.wikipedia.org/wiki/Дієслово
+verb = re.compile('(сь|ся|ив|ать|ять|у|ю|ав|али|учи|ячи|вши|ши|е|ме|ати|яти|є)$')
+# http://uk.wikipedia.org/wiki/Іменник
+noun = re.compile('(а|ев|ов|е|ями|ами|еи|и|ей|ой|ий|й|иям|ям|ием|ем|ам|ом|о|у|ах|иях|ях|ы|ь|ию|ью|ю|ия|ья|я|і|ові|ї|ею|єю|ою|є|еві|ем|єм|ів|їв|ю)$')
+rvre = re.compile('[аеиоуюяіїє]')
+derivational = re.compile('[^аеиоуюяіїє][аеиоуюяіїє]+[^аеиоуюяіїє]+[аеиоуюяіїє].*(?<=о)сть?$')
+
+n1_re = re.compile('и$')
+n2_re = re.compile('ость$')
+n3_re = re.compile('ь$')
+n4_re = re.compile('ейше?$')
+n5_re = re.compile('нн$')
+
+
+def ukstemmer_search_preprocess(word):
+    word = word.lower()
+    word = word.replace("'", "")
+    word = word.replace("ё", "е")
+    word = word.replace("ъ", "ї")
+    return word
 
 class UkrainianStemmer():
     def __init__(self, word):
         self.word = word
-        self.vowel = r'аеиоуюяіїє'  # http://uk.wikipedia.org/wiki/Голосний_звук
-        self.perfectiveground = r'(ив|ивши|ившись|ыв|ывши|ывшись((?<=[ая])(в|вши|вшись)))$'
-        # http://uk.wikipedia.org/wiki/Рефлексивне_дієслово
-        self.reflexive = r'(с[яьи])$'
-        # http://uk.wikipedia.org/wiki/Прикметник + http://wapedia.mobi/uk/Прикметник
-        self.adjective = r'(ими|ій|ий|а|е|ова|ове|ів|є|їй|єє|еє|я|ім|ем|им|ім|их|іх|ою|йми|іми|у|ю|ого|ому|ої)$'
-        # http://uk.wikipedia.org/wiki/Дієприкметник
-        self.participle = r'(ий|ого|ому|им|ім|а|ій|у|ою|ій|і|их|йми|их)$'
-        # http://uk.wikipedia.org/wiki/Дієслово
-        self.verb = r'(сь|ся|ив|ать|ять|у|ю|ав|али|учи|ячи|вши|ши|е|ме|ати|яти|є)$'
-        # http://uk.wikipedia.org/wiki/Іменник
-        self.noun = r'(а|ев|ов|е|ями|ами|еи|и|ей|ой|ий|й|иям|ям|ием|ем|ам|ом|о|у|ах|иях|ях|ы|ь|ию|ью|ю|ия|ья|я|і|ові|ї|ею|єю|ою|є|еві|ем|єм|ів|їв|ю)$'
-        self.rvre = r'[аеиоуюяіїє]'
-        self.derivational = r'[^аеиоуюяіїє][аеиоуюяіїє]+[^аеиоуюяіїє]+[аеиоуюяіїє].*(?<=о)сть?$'
         self.RV = ''
-
-    def ukstemmer_search_preprocess(self, word):
-        word = word.lower()
-        word = word.replace("'", "")
-        word = word.replace("ё", "е")
-        word = word.replace("ъ", "ї")
-        return word
 
     def s(self, st, reg, to):
         orig = st
-        self.RV = re.sub(reg, to, st)
+        self.RV = reg.sub(to, st)
         return (orig != self.RV)
 
     def stem_word(self):
-        word = self.ukstemmer_search_preprocess(self.word)
-        if not re.search('[аеиоуюяіїє]', word):
+        word = ukstemmer_search_preprocess(self.word)
+        if not rvre.search(word):
             stem = word
         else:
-            p = re.search(self.rvre, word)
+            p = rvre.search(word)
             start = word[0:p.span()[1]]
             self.RV = word[p.span()[1]:]
 
             # Step 1
-            if not self.s(self.RV, self.perfectiveground, ''):
+            if not self.s(self.RV, perfectiveground, ''):
 
-                self.s(self.RV, self.reflexive, '')
-                if self.s(self.RV, self.adjective, ''):
-                    self.s(self.RV, self.participle, '')
+                self.s(self.RV, reflexive, '')
+                if self.s(self.RV, adjective, ''):
+                    self.s(self.RV, participle, '')
                 else:
-                    if not self.s(self.RV, self.verb, ''):
-                        self.s(self.RV, self.noun, '')
+                    if not self.s(self.RV, verb, ''):
+                        self.s(self.RV, noun, '')
             # Step 2
-            self.s(self.RV, 'и$', '')
+            self.s(self.RV, n1_re, '')
 
             # Step 3
-            if re.search(self.derivational, self.RV):
-                self.s(self.RV, 'ость$', '')
+            if re.search(derivational, self.RV):
+                self.s(self.RV, n2_re, '')
 
             # Step 4
-            if self.s(self.RV, 'ь$', ''):
-                self.s(self.RV, 'ейше?$', '')
-                self.s(self.RV, 'нн$', u'н')
+            if self.s(self.RV, n3_re, ''):
+                self.s(self.RV, n4_re, '')
+                self.s(self.RV, n5_re, u'н')
 
             stem = start + self.RV
         return stem
 
+def stem_word(word):
+    RV = ""
+    def s(st, reg, to):
+        # global RV
+        orig = st
+        RV = reg.sub(to, st)
+        return (orig != RV)
+
+    word = ukstemmer_search_preprocess(word)
+    if not rvre.search(word):
+        stem = word
+    else:
+        p = rvre.search(word)
+        start = word[0:p.span()[1]]
+        RV = word[p.span()[1]:]
+
+        # Step 1
+        if not s(RV, perfectiveground, ''):
+
+            s(RV, reflexive, '')
+            if s(RV, adjective, ''):
+                s(RV, participle, '')
+            else:
+                if not s(RV, verb, ''):
+                    s(RV, noun, '')
+        # Step 2
+        s(RV, n1_re, '')
+
+        # Step 3
+        if re.search(derivational, RV):
+            s(RV, n2_re, '')
+
+        # Step 4
+        if s(RV, n3_re, ''):
+            s(RV, n4_re, '')
+            s(RV, n5_re, u'н')
+
+        stem = start + RV
+    return stem
 
 if __name__ == '__main__':
-    stemObj = UkrainianStemmer('Рефлексивного')
-    print(stemObj.stem_word())
-    stemObj = UkrainianStemmer('Тямущий')
-    print(stemObj.stem_word())
+    import json
+    with open("words_check.json","r", encoding="utf8") as f:
+        words = json.load(f)
+    results = []
+    for word in words:
+        stemObj = UkrainianStemmer(word["val"])
+        assert(word["result"] == stemObj.stem_word())
+        assert(word["result"] == stem_word(word["result"]) )
+   
+    print("done")
+
