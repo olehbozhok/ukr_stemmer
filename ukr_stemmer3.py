@@ -47,49 +47,6 @@ def ukstemmer_search_preprocess(word):
     word = word.replace("ъ", "ї")
     return word
 
-class UkrainianStemmer():
-    def __init__(self, word):
-        self.word = word
-        self.RV = ''
-
-    def s(self, st, reg, to):
-        orig = st
-        self.RV = reg.sub(to, st)
-        return (orig != self.RV)
-
-    def stem_word(self):
-        word = ukstemmer_search_preprocess(self.word)
-        if not rvre.search(word):
-            stem = word
-        else:
-            p = rvre.search(word)
-            start = word[0:p.span()[1]]
-            self.RV = word[p.span()[1]:]
-
-            # Step 1
-            if not self.s(self.RV, perfectiveground, ''):
-
-                self.s(self.RV, reflexive, '')
-                if self.s(self.RV, adjective, ''):
-                    self.s(self.RV, participle, '')
-                else:
-                    if not self.s(self.RV, verb, ''):
-                        self.s(self.RV, noun, '')
-            # Step 2
-            self.s(self.RV, n1_re, '')
-
-            # Step 3
-            if re.search(derivational, self.RV):
-                self.s(self.RV, n2_re, '')
-
-            # Step 4
-            if self.s(self.RV, n3_re, ''):
-                self.s(self.RV, n4_re, '')
-                self.s(self.RV, n5_re, u'н')
-
-            stem = start + self.RV
-        return stem
-
 def stem_word(word):
     RV = ""
     def s(st, reg, to):
@@ -136,8 +93,6 @@ if __name__ == '__main__':
         words = json.load(f)
     results = []
     for word in words:
-        stemObj = UkrainianStemmer(word["val"])
-        assert(word["result"] == stemObj.stem_word())
         assert(word["result"] == stem_word(word["result"]) )
    
     print("done")
