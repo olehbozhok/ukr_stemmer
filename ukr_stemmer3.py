@@ -13,6 +13,9 @@ https://drupal.org/project/ukstemmer
 Algorithm implementation in Python by Zakharov Kyrylo
 https://github.com/Amice13
 
+Algorithm optymized in Python by Oleh Bozhok
+https://github.com/olehbozhok/ukr_stemmer
+
 """
 
 
@@ -48,25 +51,25 @@ def ukstemmer_search_preprocess(word):
     return word
 
 def stem_word(word):
-    RV = ""
+    RV = ''
     def s(st, reg, to):
-        # global RV
+        nonlocal RV
         orig = st
-        RV = reg.sub(to, st)
-        return (orig != RV)
+        RV = re.sub(reg, to, st)
+        return orig !=RV
 
     word = ukstemmer_search_preprocess(word)
-    if not rvre.search(word):
+    if not re.search(rvre, word):
         stem = word
     else:
-        p = rvre.search(word)
+        p = re.search(rvre, word)
         start = word[0:p.span()[1]]
         RV = word[p.span()[1]:]
 
         # Step 1
         if not s(RV, perfectiveground, ''):
-
             s(RV, reflexive, '')
+
             if s(RV, adjective, ''):
                 s(RV, participle, '')
             else:
@@ -76,24 +79,37 @@ def stem_word(word):
         s(RV, n1_re, '')
 
         # Step 3
-        if re.search(derivational, RV):
+        if re.search(derivational,RV):
             s(RV, n2_re, '')
 
         # Step 4
         if s(RV, n3_re, ''):
             s(RV, n4_re, '')
-            s(RV, n5_re, u'н')
+            s(RV, n5_re, 'н')
 
-        stem = start + RV
+        stem = start +RV
     return stem
 
-if __name__ == '__main__':
+def main1():
     import json
     with open("words_check.json","r", encoding="utf8") as f:
         words = json.load(f)
-    results = []
     for word in words:
-        assert(word["result"] == stem_word(word["result"]) )
+        result =stem_word(word["val"])
+        assert(word["result"] ==  result)
+        if word["val"] == result:
+            continue
+
+        print(f'val: {word["val"]} result: {result}')
+        # break
+        input("pres enter")
    
     print("done")
+
+def main2():
+    stem_word("ручкається")
+
+if __name__ == '__main__':
+#    main1()
+    main2()
 
